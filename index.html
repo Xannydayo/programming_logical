@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seleksi Test — Programming & Logical IQ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Start Screen -->
+  <div id="start-screen" class="screen active">
+    <div class="start-card">
+      <div class="start-badge">Seleksi Test</div>
+      <h1>Programming &amp; Logical IQ Test</h1>
+      <p class="start-desc">
+        Tes seleksi terdiri dari <strong>70 soal</strong> pilihan ganda dengan estimasi waktu
+        <strong>70 menit</strong>. Jawab semua soal sebelum waktu habis.
+      </p>
+      <div class="section-info">
+        <div class="section-chip programming">
+          <span class="chip-dot"></span>
+          Basic Programming Test — 50 soal (Python, HTML, CSS, OOP, Pseudocode)
+        </div>
+        <div class="section-chip logic">
+          <span class="chip-dot"></span>
+          Logical / IQ Test — 20 soal (visual SVG)
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="participant-name">Nama Peserta <span class="optional">(opsional)</span></label>
+        <input type="text" id="participant-name" placeholder="Masukkan nama Anda" maxlength="80" autocomplete="name">
+      </div>
+      <button type="button" id="btn-start" class="btn btn-primary btn-lg">Mulai Tes</button>
+    </div>
+  </div>
+
+  <!-- Test Screen -->
+  <div id="test-screen" class="screen">
+    <header class="test-header">
+      <div class="header-left">
+        <h2 class="test-title">Seleksi Test</h2>
+        <span id="participant-display" class="participant-name"></span>
+      </div>
+      <div class="header-center">
+        <div class="progress-wrap">
+          <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill"></div>
+          </div>
+          <span id="progress-text" class="progress-text">0 / 70 dijawab</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div id="total-timer" class="timer" aria-live="polite">
+          <span class="timer-label">Sisa Waktu</span>
+          <span id="timer-display" class="timer-value">70:00</span>
+        </div>
+        <button type="button" id="btn-reset" class="btn btn-ghost btn-sm" title="Reset Tes">Reset</button>
+      </div>
+    </header>
+
+    <div class="test-layout">
+      <aside class="sidebar" id="sidebar">
+        <button type="button" class="sidebar-toggle" id="sidebar-toggle" aria-expanded="true">
+          Navigasi Soal
+          <span class="toggle-icon">▼</span>
+        </button>
+        <div class="sidebar-content" id="sidebar-content">
+          <div class="nav-section-label programming">Programming (1–50)</div>
+          <div id="nav-grid-programming" class="nav-grid"></div>
+          <div class="nav-section-label logic">Logic / IQ (51–70)</div>
+          <div id="nav-grid-logic" class="nav-grid"></div>
+        </div>
+      </aside>
+
+      <main class="question-area">
+        <div id="question-container" class="question-container">
+          <!-- Rendered by JS -->
+        </div>
+        <div class="question-nav">
+          <button type="button" id="btn-prev" class="btn btn-secondary">← Sebelumnya</button>
+          <button type="button" id="btn-submit-test" class="btn btn-success">Submit Tes</button>
+          <button type="button" id="btn-next" class="btn btn-primary">Selanjutnya →</button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Result Screen -->
+  <div id="result-screen" class="screen">
+    <div class="result-card">
+      <div class="result-header">
+        <h1>Hasil Tes</h1>
+        <p id="result-participant" class="result-participant"></p>
+      </div>
+      <div class="score-overview">
+        <div class="score-ring-wrap">
+          <svg class="score-ring" viewBox="0 0 120 120">
+            <circle class="ring-bg" cx="60" cy="60" r="52"/>
+            <circle id="ring-progress" class="ring-fill" cx="60" cy="60" r="52"/>
+          </svg>
+          <div class="score-ring-text">
+            <span id="score-percent" class="score-percent">0%</span>
+            <span id="score-fraction" class="score-fraction">0/70</span>
+          </div>
+        </div>
+        <div class="score-details">
+          <div class="score-detail-item">
+            <span class="detail-label">Programming</span>
+            <div class="detail-bar-wrap">
+              <div id="bar-programming" class="detail-bar programming"></div>
+            </div>
+            <span id="score-programming" class="detail-value">0/50</span>
+          </div>
+          <div class="score-detail-item">
+            <span class="detail-label">Logic / IQ</span>
+            <div class="detail-bar-wrap">
+              <div id="bar-logic" class="detail-bar logic"></div>
+            </div>
+            <span id="score-logic" class="detail-value">0/20</span>
+          </div>
+          <div class="time-stats">
+            <div class="time-stat">
+              <span class="time-label">Total Waktu</span>
+              <span id="time-total" class="time-value">—</span>
+            </div>
+            <div class="time-stat">
+              <span class="time-label">Rata-rata / Soal</span>
+              <span id="time-avg" class="time-value">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="result-actions">
+        <button type="button" id="btn-review" class="btn btn-primary btn-lg">Review Jawaban</button>
+        <button type="button" id="btn-restart" class="btn btn-secondary">Mulai Tes Baru</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review Screen -->
+  <div id="review-screen" class="screen">
+    <header class="review-header">
+      <h1>Review Jawaban</h1>
+      <div class="review-filters">
+        <button type="button" class="filter-btn active" data-filter="all">Semua</button>
+        <button type="button" class="filter-btn" data-filter="wrong">Hanya yang Salah</button>
+        <button type="button" class="filter-btn" data-filter="correct">Hanya yang Benar</button>
+      </div>
+      <button type="button" id="btn-back-result" class="btn btn-ghost">← Kembali ke Hasil</button>
+    </header>
+    <div id="review-list" class="review-list"></div>
+  </div>
+
+  <!-- Modal: Resume -->
+  <div id="modal-resume" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-resume-title">
+    <div class="modal">
+      <h3 id="modal-resume-title">Lanjutkan tes sebelumnya?</h3>
+      <p>Ditemukan progres tes yang belum selesai. Apakah Anda ingin melanjutkan dari posisi terakhir?</p>
+      <div class="modal-actions">
+        <button type="button" id="modal-resume-no" class="btn btn-secondary">Mulai Baru</button>
+        <button type="button" id="modal-resume-yes" class="btn btn-primary">Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Confirm -->
+  <div id="modal-confirm" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-confirm-title">
+    <div class="modal">
+      <h3 id="modal-confirm-title">Konfirmasi</h3>
+      <p id="modal-confirm-message"></p>
+      <div class="modal-actions">
+        <button type="button" id="modal-confirm-cancel" class="btn btn-secondary">Batal</button>
+        <button type="button" id="modal-confirm-ok" class="btn btn-primary">Ya, Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js" charset="UTF-8"></script>
+</body>
+</html>

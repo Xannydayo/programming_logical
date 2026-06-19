@@ -1427,33 +1427,67 @@ const ORIGINAL_QUESTIONS = [
 
   function makeOptionSet(correct, wrongs) {
     const opts = ['a', 'b', 'c', 'd'];
-    const labels = [];
-    const all = shuffle([correct, ...wrongs]);
-    return all.map((text, i) => ({ id: opts[i], label: String(text), svg: null }));
+    const correctStr = String(correct);
+    const uniqueWrongs = [...new Set(wrongs.map(String).filter((w) => w !== correctStr))];
+    while (uniqueWrongs.length < 3) {
+      uniqueWrongs.push(`Opsi lain ${uniqueWrongs.length + 1}`);
+    }
+    const items = shuffle([
+      { label: correctStr, isCorrect: true },
+      ...uniqueWrongs.slice(0, 3).map((label) => ({ label, isCorrect: false })),
+    ]);
+    const options = items.map((item, i) => ({ id: opts[i], label: item.label, svg: null }));
+    const answerId = options[items.findIndex((item) => item.isCorrect)].id;
+    return { options, answerId };
+  }
+
+  function numericWrongs(correct) {
+    const num = Number(correct);
+    return [String(num + 1), String(Math.max(0, num - 1)), 'Error'];
   }
 
   // Generators per topic produce simple parameterized questions
   function genPython(i) {
-    const a = Math.floor(Math.random() * 9) + 1;
-    const b = Math.floor(Math.random() * 9) + 1;
+    const a = (i % 9) + 1;
+    const b = ((i * 3) % 9) + 1;
+    const repeat = (i % 4) + 2;
     const templates = [
-      { code: `print(${a} + ${b})`, answer: String(a + b) },
-      { code: `print(${a} * ${b})`, answer: String(a * b) },
-      { code: `print(${a} % ${b})`, answer: String(a % b) },
-      { code: `s = "ha"; print(s * ${Math.floor(Math.random() * 4) + 2})`, answer: 'ha'.repeat(Math.floor(Math.random() * 4) + 2) },
+      {
+        code: `print(${a} + ${b})`,
+        answer: String(a + b),
+        explanation: `${a} + ${b} = ${a + b}`,
+      },
+      {
+        code: `print(${a} * ${b})`,
+        answer: String(a * b),
+        explanation: `${a} × ${b} = ${a * b}`,
+      },
+      {
+        code: `print(${a} % ${b})`,
+        answer: String(a % b),
+        explanation: `Sisa bagi ${a} ÷ ${b} = ${a % b}`,
+      },
+      {
+        code: `s = "ha"; print(s * ${repeat})`,
+        answer: 'ha'.repeat(repeat),
+        explanation: `"ha" diulang ${repeat} kali → "${'ha'.repeat(repeat)}"`,
+      },
     ];
     const pick = templates[i % templates.length];
-    const wrongs = [String(Number(pick.answer) + 1), String(Math.max(0, Number(pick.answer) - 1)), 'Error'];
+    const wrongs = Number.isNaN(Number(pick.answer))
+      ? [pick.answer.slice(0, -1) || 'ha', pick.answer + 'ha', 'None']
+      : numericWrongs(pick.answer);
+    const { options, answerId } = makeOptionSet(pick.answer, wrongs);
     return {
       id: `p-${i}`,
       section: 'programming',
       type: 'code',
       lang: 'python',
-      question: 'Apa output kode Python berikut?',
+      question: 'Apa output yang dicetak oleh kode Python berikut?',
       codeSnippet: pick.code,
-      options: makeOptionSet(pick.answer, wrongs),
-      answer: null, // will set after options shuffled
-      explanation: `Jawaban: ${pick.answer}`,
+      options,
+      answer: answerId,
+      explanation: pick.explanation,
     };
   }
 
@@ -1462,44 +1496,77 @@ const ORIGINAL_QUESTIONS = [
     const tag = tags[i % tags.length];
     let code = `<${tag}>Contoh</${tag}>`;
     let correct = `<${tag}>`;
+    let question = 'Tag pembuka elemen HTML pada potongan kode berikut adalah?';
+    let explanation = `Elemen menggunakan tag <${tag}>`;
     if (tag === 'img') {
       code = `<img src="foto.jpg" alt="foto">`;
       correct = 'alt';
+      question = 'Atribut HTML manakah yang berisi teks alternatif untuk gambar?';
+      explanation = 'Atribut alt memberikan deskripsi gambar untuk aksesibilitas dan jika gambar gagal dimuat.';
+    } else if (tag === 'input') {
+      code = `<input type="text" name="nama" placeholder="Masukkan nama">`;
+      correct = '<input>';
+      question = 'Tag HTML elemen formulir pada potongan kode berikut adalah?';
+      explanation = 'Elemen <input> digunakan untuk menerima input dari pengguna.';
+    } else if (tag === 'a') {
+      code = `<a href="https://example.com">Kunjungi</a>`;
+      explanation = 'Elemen <a> (anchor) digunakan untuk membuat hyperlink.';
     }
-    const wrongs = ['<div>', '<span>', '<header>'];
+    const wrongs = ['<div>', '<span>', '<header>', '<p>', '<section>'].filter((w) => w !== correct);
+    const { options, answerId } = makeOptionSet(correct, wrongs);
     return {
       id: `p-${i}`,
       section: 'programming',
       type: 'code',
       lang: 'html',
-      question: 'Perhatikan potongan HTML berikut. Elemen manakah ini?',
+      question,
       codeSnippet: code,
-      options: makeOptionSet(correct, wrongs),
-      answer: null,
-      explanation: `Elemen: ${correct}`,
+      options,
+      answer: answerId,
+      explanation,
     };
   }
 
   function genCSS(i) {
     const props = [
-      { prop: 'color', value: 'blue' },
-      { prop: 'margin', value: '20px' },
-      { prop: 'padding', value: '10px' },
-      { prop: 'font-size', value: '16px' },
+      {
+        prop: 'color',
+        value: 'blue',
+        effect: 'Warna teks menjadi biru',
+        wrongs: ['Latar belakang biru', 'Border elemen biru', 'Teks dicetak tebal'],
+      },
+      {
+        prop: 'margin',
+        value: '20px',
+        effect: 'Jarak luar elemen sebesar 20px',
+        wrongs: ['Jarak dalam elemen 20px', 'Lebar elemen 20px', 'Tinggi elemen 20px'],
+      },
+      {
+        prop: 'padding',
+        value: '10px',
+        effect: 'Jarak dalam elemen sebesar 10px',
+        wrongs: ['Jarak luar elemen 10px', 'Lebar elemen 10px', 'Spasi antar baris 10px'],
+      },
+      {
+        prop: 'font-size',
+        value: '16px',
+        effect: 'Ukuran huruf menjadi 16px',
+        wrongs: ['Tinggi baris 16px', 'Lebar elemen 16px', 'Ketebalan huruf 16px'],
+      },
     ];
     const p = props[i % props.length];
-    const code = `element {\n  ${p.prop}: ${p.value};\n}`;
-    const wrongs = ['background', 'size', 'gap'];
+    const code = `.teks {\n  ${p.prop}: ${p.value};\n}`;
+    const { options, answerId } = makeOptionSet(p.effect, p.wrongs);
     return {
       id: `p-${i}`,
       section: 'programming',
       type: 'code',
       lang: 'css',
-      question: 'Dalam CSS berikut, properti manakah yang diatur?',
+      question: 'Apa efek visual dari deklarasi CSS berikut?',
       codeSnippet: code,
-      options: makeOptionSet(p.prop, wrongs),
-      answer: null,
-      explanation: `Properti adalah ${p.prop}`,
+      options,
+      answer: answerId,
+      explanation: `Properti ${p.prop}: ${p.value} → ${p.effect}.`,
     };
   }
 
@@ -1509,35 +1576,38 @@ const ORIGINAL_QUESTIONS = [
     const code = `class ${cls}:\n    def __init__(self):\n        self.x = 0\n\nobj = ${cls}()\nprint(type(obj).__name__)`;
     const correct = cls;
     const wrongs = ['int', 'None', 'object'];
+    const { options, answerId } = makeOptionSet(correct, wrongs);
     return {
       id: `p-${i}`,
       section: 'programming',
       type: 'code',
       lang: 'oop',
-      question: 'Apa output dari kode OOP berikut?',
+      question: 'Apa yang dicetak oleh type(obj).__name__ pada kode berikut?',
       codeSnippet: code,
-      options: makeOptionSet(correct, wrongs),
-      answer: null,
-      explanation: `Objek bertipe ${correct}`,
+      options,
+      answer: answerId,
+      explanation: `type(obj).__name__ mengembalikan nama class objek, yaitu "${correct}".`,
     };
   }
 
   function genPseudocode(i) {
-    const a = Math.floor(Math.random() * 5) + 1;
-    const b = Math.floor(Math.random() * 5) + 1;
+    const a = (i % 5) + 1;
+    const b = ((i * 2) % 5) + 1;
+    const sumLoop = (b * (b + 1)) / 2;
+    const correct = String(a + sumLoop);
     const code = `total <- ${a}\nFOR i <- 1 TO ${b}\n    total <- total + i\nEND FOR\nDISPLAY total`;
-    const correct = String(a + (b * (b + 1)) / 2);
-    const wrongs = [String(Number(correct) - 1), String(Number(correct) + 1), '0'];
+    const wrongs = [String(Number(correct) - 1), String(Number(correct) + 1), String(a)];
+    const { options, answerId } = makeOptionSet(correct, wrongs);
     return {
       id: `p-${i}`,
       section: 'programming',
       type: 'code',
       lang: 'pseudocode',
-      question: 'Apa output pseudocode berikut?',
+      question: 'Berapa nilai total yang ditampilkan setelah loop selesai?',
       codeSnippet: code,
-      options: makeOptionSet(correct, wrongs),
-      answer: null,
-      explanation: `Hasil perhitungan: ${correct}`,
+      options,
+      answer: answerId,
+      explanation: `total awal ${a}, loop menambah 1+2+...+${b}=${sumLoop}, jadi total = ${correct}.`,
     };
   }
 
@@ -1554,51 +1624,35 @@ const ORIGINAL_QUESTIONS = [
       else if (topic === 'css') q = genCSS(idx);
       else if (topic === 'oop') q = genOOP(idx);
       else if (topic === 'pseudocode') q = genPseudocode(idx);
-      // set correct answer id after options shuffled
-      shuffle(q.options);
-      q.answer = q.options[0].id;
       pool.push(q);
     }
   }
 
   // If pool smaller than POOL_SIZE, fill with python variants
   while (pool.length < POOL_SIZE) {
-    const q = genPython(pool.length + 1);
-    shuffle(q.options);
-    q.answer = q.options[0].id;
-    pool.push(q);
+    pool.push(genPython(pool.length + 1));
   }
 
-  // select DISPLAY_PROGRAMMING balanced by topic
-  const grouped = {};
-  pool.forEach((p) => {
-    grouped[p.lang] = grouped[p.lang] || [];
-    grouped[p.lang].push(p);
-  });
-  const perTopicDisplay = Math.floor(DISPLAY_PROGRAMMING / topics.length);
-  let selected = [];
-  topics.forEach((topic) => {
-    const list = grouped[topic] || [];
-    shuffle(list);
-    selected = selected.concat(list.slice(0, perTopicDisplay));
-  });
-  // fill remaining slots
-  const rest = shuffle(pool.slice()).filter((p) => !selected.includes(p));
-  let ri = 0;
-  while (selected.length < DISPLAY_PROGRAMMING && ri < rest.length) selected.push(rest[ri++]);
-  shuffle(selected);
+  // Randomly select DISPLAY_PROGRAMMING items from the full pool
+  const shuffledPool = shuffle(pool.slice());
+  const selected = shuffledPool.slice(0, DISPLAY_PROGRAMMING);
 
-  // combine programming + logic, shuffle the full set, then assign sequential ids
-  const logicAssigned = logicOriginal.map((q) => JSON.parse(JSON.stringify(q)));
-  const combined = shuffle(selected.concat(logicAssigned));
-
-  combined.forEach((q, idx) => {
+  // Assign sequential numeric ids to the selected programming questions (1..DISPLAY_PROGRAMMING)
+  selected.forEach((q, idx) => {
     q.id = idx + 1;
-    // ensure programming items have section 'programming' (logic keep 'logic')
-    if (!q.section) q.section = 'programming';
+    q.section = 'programming';
   });
 
-  window.questions = combined;
+  // Assign ids to logic questions after programming (DISPLAY_PROGRAMMING+1 ..)
+  const logicAssigned = logicOriginal.map((q, idx) => {
+    const copy = JSON.parse(JSON.stringify(q));
+    copy.id = DISPLAY_PROGRAMMING + idx + 1;
+    copy.section = 'logic';
+    return copy;
+  });
+
+  // Final question list: programming (1..DISPLAY_PROGRAMMING) then logic
+  window.questions = selected.concat(logicAssigned);
 })();
 
 const questions = window.questions;

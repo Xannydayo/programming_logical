@@ -203,6 +203,16 @@
     return out;
   }
   
+  /* Escape HTML entities so labels like <head>, <nav> etc.
+     render as visible text instead of being parsed as HTML tags. */
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   function getSectionCounts() {
     const programming = questions.filter((q) => q.section === 'programming').length;
     const logic = questions.filter((q) => q.section === 'logic').length;
@@ -780,7 +790,7 @@
       if (opt.svg) {
         return `<button type="button" class="option-btn svg-option${sel}" data-option="${opt.id}"><span class="option-label">${opt.id.toUpperCase()}</span><span class="option-svg">${opt.svg}</span></button>`;
       }
-      return `<button type="button" class="option-btn${sel}" data-option="${opt.id}"><span class="option-label">${opt.id.toUpperCase()}</span><span class="option-text">${opt.label}</span></button>`;
+      return `<button type="button" class="option-btn${sel}" data-option="${opt.id}"><span class="option-label">${opt.id.toUpperCase()}</span><span class="option-text">${escapeHtml(opt.label)}</span></button>`;
     }).join('');
   
     container.innerHTML = `
@@ -934,7 +944,7 @@
         if (opt.id === userAns && userAns !== q.answer) cls += ' wrong-selected';
         if (opt.id === userAns && userAns === q.answer) cls += ' selected correct-answer';
         if (opt.svg) return `<div class="${cls}"><span class="option-label">${opt.id.toUpperCase()}</span><span class="option-svg">${opt.svg}</span></div>`;
-        return `<div class="${cls}"><span class="option-label">${opt.id.toUpperCase()}</span><span class="option-text">${opt.label}</span></div>`;
+        return `<div class="${cls}"><span class="option-label">${opt.id.toUpperCase()}</span><span class="option-text">${escapeHtml(opt.label)}</span></div>`;
       }).join('');
   
       item.innerHTML = `
